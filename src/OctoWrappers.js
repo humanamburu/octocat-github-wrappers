@@ -64,6 +64,33 @@ function createMyRepo(name, description) {
     });
 }
 
+function createOrgRepo(org, repoName, description) {
+    return new Promise((resolve, reject) => {
+        client.org(org).repo({
+            'name': repoName,
+            'description': description || '',
+        }, (err) => {
+            if (err) {
+                return reject(err);
+            }
+
+            return resolve();
+        });
+    });
+}
+
+function deleteOrgRepo(org, repoName, description) {
+    return new Promise((resolve, reject) => {
+        client.repo(`${org}/${repoName}`).destroy((err) => {
+            if (err) {
+                return reject(err);
+            }
+
+            return resolve();
+        });
+    });
+}
+
 function deleteMyRepo(name) {
     const userData = getData();
 
@@ -88,4 +115,6 @@ module.exports = {
     logout,
     createMyRepo,
     deleteMyRepo,
+    createOrgRepo,
+    deleteOrgRepo,
 };
