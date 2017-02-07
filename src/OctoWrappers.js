@@ -1,5 +1,5 @@
 const octonode = require('octonode');
-const { credentials, scopes } = require('../config');
+const { credentials, scopes } = require('../configs');
 const { setInitialState, getData } = require('./UserData');
 
 
