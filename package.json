@@ -1,0 +1,23 @@
+{
+  "name": "rs-github-scripts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/humanamburu/rs-github-scripts.git"
+  },
+  "author": "humanamburu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/humanamburu/rs-github-scripts/issues"
+  },
+  "homepage": "https://github.com/humanamburu/rs-github-scripts#readme",
+  "dependencies": {
+    "colors": "^1.1.2",
+    "octonode": "^0.7.9"
+  }
+}
