@@ -29,8 +29,9 @@ login().then((data) => {
         }
     };
 
-    deleteOrgRepo('rolling-scopes-school', 'octorepo')
-    //createOrgRepo('rolling-scopes-school', 'octorepo', options)
+    createOrgRepo('rolling-scopes-school', 'octorepo', options)
         .then(data => logger.info('Successfully created!'));
+
+    //deleteOrgRepo('rolling-scopes-school', 'octorepo')
 });
 
