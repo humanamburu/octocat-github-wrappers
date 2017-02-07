@@ -1,9 +1,9 @@
-const logger = require('./src/Logger');
+const logger = require('./../src/Logger');
 const {
     login,
     createOrgRepo,
     deleteOrgRepo,
-} = require('./src/OctoWrappers');
+} = require('./../src/OctoWrappers');
 
 login().then((data) => {
     logger.info('-----------------------------');
