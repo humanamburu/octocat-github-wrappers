@@ -64,24 +64,55 @@ function createMyRepo(name, description) {
     });
 }
 
-function createOrgRepo(org, repoName, description) {
+function createOrgRepo(orgName, repoName, config = {}) {
+    const {
+        description = '',
+        params,
+        files,
+    } = config;
+    const repoPath = `${orgName}/${repoName}`;
+
     return new Promise((resolve, reject) => {
-        client.org(org).repo({
+        client.org(orgName).repo({
             'name': repoName,
             'description': description || '',
         }, (err) => {
             if (err) {
                 return reject(err);
             }
-
             return resolve();
         });
+    }).then(() => {
+        if (params) {
+            return updateRepo(repoPath, params);
+        }
+    }).then(() => {
+        /**
+         * WARNING:
+         *
+         * THIS IS PIECE OF SHIT!
+         * WIP!
+         *
+         * PLEASE CLOSE YOUR EYES HERE
+         *
+         */
+        if (files) {
+            return addFile(repoPath, files[0].name, files[0].commitMessage, files[0].content)
+                .then(() => {
+                    return addFile(repoPath, files[1].name, files[1].commitMessage, files[1].content);
+                });
+        }
+        /**
+         *
+         * OPEN HERE
+         *
+         */
     });
 }
 
-function deleteOrgRepo(org, repoName, description) {
+function deleteOrgRepo(orgName, repoName) {
     return new Promise((resolve, reject) => {
-        client.repo(`${org}/${repoName}`).destroy((err) => {
+        client.repo(`${orgName}/${repoName}`).destroy((err) => {
             if (err) {
                 return reject(err);
             }
@@ -103,6 +134,31 @@ function deleteMyRepo(name) {
             return resolve();
         });
     });
+}
+
+/** todo: refactor to common api **/
+function updateRepo(name, config) {
+    return new Promise((resolve, reject) => {
+        client.repo(name).update(config, (error) => {
+            if (error) {
+                return reject(error);
+            }
+
+            return resolve();
+        });
+    });
+}
+
+function addFile(repoName, fileName, commitMessage, content) {
+    return new Promise((resolve, reject) => {
+        client.repo(repoName).createContents(fileName, commitMessage, content, (err) => {
+            if (err) {
+                return reject(err);
+            }
+
+            return resolve();
+        });
+    })
 }
 
 module.exports = {
