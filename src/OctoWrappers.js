@@ -48,7 +48,11 @@ function login() {
         });
     });
 }
-/** todo: refactor to common logic **/
+/**
+ *
+ *  todo: refactor to common logic
+ *
+ * **/
 function createMyRepo(name, description) {
     return new Promise((resolve, reject) => {
         ghme.repo({
