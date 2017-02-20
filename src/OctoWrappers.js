@@ -7,6 +7,14 @@ const auth = octonode.auth.config(credentials);
 const client = octonode.client(credentials);
 const ghme = client.me();
 
+function promisify(resolve, reject, err) {
+    if (err) {
+        return reject(err);
+    }
+
+    return resolve();
+}
+
 function logout() {
     const userData = getData();
     const { id, login } = userData;
@@ -59,11 +67,7 @@ function createMyRepo(name, description) {
             'name': name,
             'description': description || '',
         }, (err) => {
-            if (err) {
-                return reject(err);
-            }
-
-            return resolve();
+            return promisify(resolve, reject, err);
         });
     });
 }
@@ -81,10 +85,7 @@ function createOrgRepo(orgName, repoName, config = {}) {
             'name': repoName,
             'description': description || '',
         }, (err) => {
-            if (err) {
-                return reject(err);
-            }
-            return resolve();
+            return promisify(resolve, reject, err);
         });
     }).then(() => {
         if (params) {
@@ -117,11 +118,7 @@ function createOrgRepo(orgName, repoName, config = {}) {
 function deleteOrgRepo(orgName, repoName) {
     return new Promise((resolve, reject) => {
         client.repo(`${orgName}/${repoName}`).destroy((err) => {
-            if (err) {
-                return reject(err);
-            }
-
-            return resolve();
+            return promisify(resolve, reject, err);
         });
     });
 }
@@ -131,24 +128,15 @@ function deleteMyRepo(name) {
 
     return new Promise((resolve, reject) => {
         client.repo(`${userData.login}/${name}`).destroy((err) => {
-            if (err) {
-                return reject(err);
-            }
-
-            return resolve();
+            return promisify(resolve, reject, err);
         });
     });
 }
 
-/** todo: refactor to common api **/
 function updateRepo(name, config) {
     return new Promise((resolve, reject) => {
-        client.repo(name).update(config, (error) => {
-            if (error) {
-                return reject(error);
-            }
-
-            return resolve();
+        client.repo(name).update(config, (err) => {
+            return promisify(resolve, reject, err);
         });
     });
 }
@@ -156,11 +144,7 @@ function updateRepo(name, config) {
 function addFile(repoName, fileName, commitMessage, content) {
     return new Promise((resolve, reject) => {
         client.repo(repoName).createContents(fileName, commitMessage, content, (err) => {
-            if (err) {
-                return reject(err);
-            }
-
-            return resolve();
+            return promisify(resolve, reject, err);
         });
     })
 }
@@ -182,16 +166,10 @@ function addToOrgTeam(org, teamName, member) {
             }
 
             client.team(team.id).addMembership(member, (err) => {
-                if (err) {
-                    return reject(err);
-                }
-
-                return resolve();
+                return promisify(resolve, reject, err);
             })
 
         });
-
-
     });
 }
 
@@ -212,16 +190,34 @@ function removeFromOrgTeam(organization, teamName, member) {
             }
 
             client.team(team.id).removeUser(member, (err) => {
-                if (err) {
-                    return reject(err);
-                }
-
-                return resolve();
+                return promisify(resolve, reject, err);
             })
 
         });
 
 
+    });
+}
+
+function addRepoToOrgTeam(org, teamName, repo, permission) {
+    return new Promise((resolve, reject) => {
+        client.org(org).teams((err, data) => {
+            if (err) {
+                return reject(err);
+            }
+
+            const team = data.find(item => item.name === teamName);
+
+            if (!team) {
+                return reject({
+                    err: new Error('Team not found'),
+                    data
+                });
+            }
+            client.put(`/teams/${team.id}/repos/${org}/${repo}`, { permission }, (err) => {
+                return promisify(resolve, reject, err);
+            });
+        });
     });
 }
 
@@ -239,4 +235,5 @@ module.exports = {
     deleteOrgRepo,
     addToOrgTeam,
     removeFromOrgTeam,
+    addRepoToOrgTeam,
 };

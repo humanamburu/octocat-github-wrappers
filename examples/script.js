@@ -1,9 +1,7 @@
 const logger = require('../src/Logger');
 const {
     login,
-    createOrgRepo,
-    deleteOrgRepo,
-    addToOrgTeam,
+    addRepoToOrgTeam,
 } = require('./../src/OctoWrappers');
 const { students } = require('./new_students.json');
 
@@ -13,20 +11,9 @@ login().then((data) => {
     logger.info('-----------------------------');
 
 
-    invite(students.pop())
-});
-
-function invite(member) {
-    if (!member) {
-        return;
-    }
-
-    logger.info(member);
-    addToOrgTeam('rolling-scopes-school', 'Students', member)
+    addRepoToOrgTeam('rolling-scopes-school', 'core', 'finite-state-machine', 'push')
         .then(() => {
             logger.info('done');
-            invite(students.pop());
         })
-        .catch((e) => logger.error(e));
-}
-
+        .catch((e) => logger.error(JSON.stringify(e)));
+});
