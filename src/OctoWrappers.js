@@ -165,6 +165,66 @@ function addFile(repoName, fileName, commitMessage, content) {
     })
 }
 
+function addToOrgTeam(org, teamName, member) {
+    return new Promise((resolve, reject) => {
+        client.org(org).teams((err, data) => {
+            if (err) {
+                return reject(err);
+            }
+
+            const team = data.find(item => item.name === teamName);
+
+            if (!team) {
+                return reject({
+                    err: new Error('Team not found'),
+                    data
+                });
+            }
+
+            client.team(team.id).addMembership(member, (err) => {
+                if (err) {
+                    return reject(err);
+                }
+
+                return resolve();
+            })
+
+        });
+
+
+    });
+}
+
+function removeFromOrgTeam(organization, teamName, member) {
+    return new Promise((resolve, reject) => {
+        client.org(organization).teams((err, data) => {
+            if (err) {
+                return reject(err);
+            }
+
+            const team = data.find(item => item.name === teamName);
+
+            if (!team) {
+                return reject({
+                    err: new Error('Team not found'),
+                    data
+                });
+            }
+
+            client.team(team.id).removeUser(member, (err) => {
+                if (err) {
+                    return reject(err);
+                }
+
+                return resolve();
+            })
+
+        });
+
+
+    });
+}
+
 module.exports = {
     auth,
     ghme,
@@ -177,4 +237,6 @@ module.exports = {
     deleteMyRepo,
     createOrgRepo,
     deleteOrgRepo,
+    addToOrgTeam,
+    removeFromOrgTeam,
 };
