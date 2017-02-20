@@ -7,6 +7,13 @@ const auth = octonode.auth.config(credentials);
 const client = octonode.client(credentials);
 const ghme = client.me();
 
+/**
+ * Helper for promisification
+ * @param resolve
+ * @param reject
+ * @param err
+ * @returns {*}
+ */
 function promisify(resolve, reject, err) {
     if (err) {
         return reject(err);
@@ -14,7 +21,10 @@ function promisify(resolve, reject, err) {
 
     return resolve();
 }
-
+/**
+ *
+ * @returns {Promise}
+ */
 function logout() {
     const userData = getData();
     const { id, login } = userData;
@@ -34,7 +44,10 @@ function logout() {
         resolve({ login });
     });
 }
-
+/**
+ *
+ * @returns {Promise}
+ */
 function login() {
     const userData = getData();
 
@@ -57,10 +70,11 @@ function login() {
     });
 }
 /**
- *
- *  todo: refactor to common logic
- *
- * **/
+ * Creates repo for current user
+ * @param name
+ * @param description
+ * @returns {Promise}
+ */
 function createMyRepo(name, description) {
     return new Promise((resolve, reject) => {
         ghme.repo({
@@ -71,50 +85,62 @@ function createMyRepo(name, description) {
         });
     });
 }
-
+/**
+ * Creates the org Repo with params
+ *
+ * const options = {
+ +        description,
+          auto_init,
+          gitignore_template,
+          private,
+          collaborator
+ +    };
+ * @param orgName
+ * @param repoName
+ * @param config
+ * @returns {Promise}
+ */
 function createOrgRepo(orgName, repoName, config = {}) {
     const {
         description = '',
-        params,
-        files,
+        collaborator,
+        auto_init = true,
+        gitignore_template,
+        private = true,
     } = config;
-    const repoPath = `${orgName}/${repoName}`;
+    const organization = client.org(orgName);
 
     return new Promise((resolve, reject) => {
-        client.org(orgName).repo({
+        organization.repo({
             'name': repoName,
-            'description': description || '',
+            description,
+            auto_init,
+            gitignore_template,
+            private,
         }, (err) => {
             return promisify(resolve, reject, err);
         });
     }).then(() => {
-        if (params) {
-            return updateRepo(repoPath, params);
+        if (collaborator) {
+            const cName = collaborator.name;
+            const cPermissions = collaborator.permission;
+
+            return organization.repo(repoName).addCollaborator(cName, { permission: cPermissions }, (err) => {
+                if (err) {
+                    return Promise.reject();
+                }
+
+                return Promise.resolve();
+            });
         }
-    }).then(() => {
-        /**
-         * WARNING:
-         *
-         * THIS IS PIECE OF SHIT!
-         * WIP!
-         *
-         * PLEASE CLOSE YOUR EYES HERE
-         *
-         */
-        if (files) {
-            return addFile(repoPath, files[0].name, files[0].commitMessage, files[0].content)
-                .then(() => {
-                    return addFile(repoPath, files[1].name, files[1].commitMessage, files[1].content);
-                });
-        }
-        /**
-         *
-         * OPEN HERE
-         *
-         */
     });
 }
-
+/**
+ *
+ * @param orgName
+ * @param repoName
+ * @returns {Promise}
+ */
 function deleteOrgRepo(orgName, repoName) {
     return new Promise((resolve, reject) => {
         client.repo(`${orgName}/${repoName}`).destroy((err) => {
@@ -122,7 +148,11 @@ function deleteOrgRepo(orgName, repoName) {
         });
     });
 }
-
+/**
+ *
+ * @param name
+ * @returns {Promise}
+ */
 function deleteMyRepo(name) {
     const userData = getData();
 
@@ -132,7 +162,21 @@ function deleteMyRepo(name) {
         });
     });
 }
-
+/**
+ * Edit the repository
+ * {
+ *      name	             string	Required. The name of the repository
+        description	         string	A short description of the repository
+        homepage	         string	A URL with more information about the repository
+        private	             boolean	Either true to make the repository private, or false to make it public. Creating private repositories requires a paid GitHub account. Default: false
+        has_issues	         boolean	Either true to enable issues for this repository, false to disable them. Default: true
+        has_wiki	         boolean	Either true to enable the wiki for this repository, false to disable it. Default: true
+        default_branch	     String	Updates the default branch for this repository.
+ * }
+ * @param name
+ * @param config
+ * @returns {Promise}
+ */
 function updateRepo(name, config) {
     return new Promise((resolve, reject) => {
         client.repo(name).update(config, (err) => {
@@ -140,16 +184,32 @@ function updateRepo(name, config) {
         });
     });
 }
+/**
+ * Adds single file to the repository
+ * @param repoName
+ * @param fileName
+ * @param commitMessage
+ * @param content
+ * @param [organization]
+ * @returns {Promise}
+ */
+function addFile(repoName, fileName, commitMessage, content, organization) {
+    const path = organization ? `${organization}/${repoName}` : repoName;
 
-function addFile(repoName, fileName, commitMessage, content) {
     return new Promise((resolve, reject) => {
-        client.repo(repoName).createContents(fileName, commitMessage, content, (err) => {
+        client.repo(path).createContents(fileName, commitMessage, content, (err) => {
             return promisify(resolve, reject, err);
         });
     })
 }
-
-function addToOrgTeam(org, teamName, member) {
+/**
+ * Adds user to the team at the organization
+ * @param org
+ * @param teamName
+ * @param member
+ * @returns {Promise}
+ */
+function addToTeam(org, teamName, member) {
     return new Promise((resolve, reject) => {
         client.org(org).teams((err, data) => {
             if (err) {
@@ -172,8 +232,14 @@ function addToOrgTeam(org, teamName, member) {
         });
     });
 }
-
-function removeFromOrgTeam(organization, teamName, member) {
+/**
+ *
+ * @param organization
+ * @param teamName
+ * @param member
+ * @returns {Promise}
+ */
+function removeFromTeam(organization, teamName, member) {
     return new Promise((resolve, reject) => {
         client.org(organization).teams((err, data) => {
             if (err) {
@@ -198,8 +264,15 @@ function removeFromOrgTeam(organization, teamName, member) {
 
     });
 }
-
-function addRepoToOrgTeam(org, teamName, repo, permission) {
+/**
+ * Adds or updates team permissions for repository
+ * @param org
+ * @param teamName
+ * @param repo
+ * @param permission
+ * @returns {Promise}
+ */
+function addRepoForTeam(org, teamName, repo, permission) {
     return new Promise((resolve, reject) => {
         client.org(org).teams((err, data) => {
             if (err) {
@@ -229,11 +302,12 @@ module.exports = {
     //main API
     login,
     logout,
+    addFile,
+    addToTeam,
     createMyRepo,
     deleteMyRepo,
     createOrgRepo,
     deleteOrgRepo,
-    addToOrgTeam,
-    removeFromOrgTeam,
-    addRepoToOrgTeam,
+    addRepoForTeam,
+    removeFromTeam,
 };

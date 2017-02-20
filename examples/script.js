@@ -1,19 +1,36 @@
 const logger = require('../src/Logger');
 const {
     login,
-    addRepoToOrgTeam,
+    addFile,
+    addRepoForTeam,
+    createOrgRepo,
 } = require('./../src/OctoWrappers');
-const { students } = require('./new_students.json');
 
 login().then((data) => {
     logger.info('-----------------------------');
     logger.info(` Hello ${data.username}!`);
     logger.info('-----------------------------');
 
+    const organization = 'rolling-scopes-school';
+    const options = {
+        description: 'Test repo with collaborator',
+        auto_init: true,
+        gitignore_template: 'Node',
+        private: true,
+        collaborator: {
+            name: 'humanamburu',
+            permission: 'push',
+        }
+    };
+    const repoName = 'humanamburu-frontend-course';
 
-    addRepoToOrgTeam('rolling-scopes-school', 'core', 'finite-state-machine', 'push')
+    createOrgRepo(organization, repoName, options)
         .then(() => {
-            logger.info('done');
+            return addRepoForTeam(organization, 'core', repoName, 'push').then(() => {
+                return addFile(repoName, '.eslint', 'eslint', '.idea \n node_modules', organization);
+            });
+        }).then(() => {
+            logger.warn('DONE!');
         })
         .catch((e) => logger.error(JSON.stringify(e)));
 });
