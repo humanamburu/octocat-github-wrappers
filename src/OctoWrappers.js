@@ -85,6 +85,15 @@ function createMyRepo(name, description) {
         });
     });
 }
+
+function getOrgRepos(orgName, config) {
+    const organization = client.org(orgName);
+
+    return new Promise((resolve, reject) => {
+        organization.repos(config, (err, repos) => resolve(repos)) ;
+    });
+}
+
 /**
  * Creates the org Repo with params
  *
@@ -118,21 +127,21 @@ function createOrgRepo(orgName, repoName, config = {}) {
             gitignore_template,
             private,
         }, (err) => {
-            return promisify(resolve, reject, err);
+            if (err) {
+                return reject(err);
+            }
+
+            if (collaborator) {
+                const cName = collaborator.name;
+                const cPermissions = collaborator.permission;
+
+                return organization.repo(repoName)
+                    .addCollaborator(cName, { permission: cPermissions }, () => {
+                        resolve();
+                        //todo: collaborator invite also rejection
+                    });
+            }
         });
-    }).then(() => {
-        if (collaborator) {
-            const cName = collaborator.name;
-            const cPermissions = collaborator.permission;
-
-            return organization.repo(repoName).addCollaborator(cName, { permission: cPermissions }, (err) => {
-                if (err) {
-                    return Promise.reject();
-                }
-
-                return Promise.resolve();
-            });
-        }
     });
 }
 /**
@@ -310,4 +319,5 @@ module.exports = {
     deleteOrgRepo,
     addRepoForTeam,
     removeFromTeam,
+    getOrgRepos,
 };

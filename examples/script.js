@@ -5,7 +5,8 @@ const {
     addRepoForTeam,
     createOrgRepo,
 } = require('./../src/OctoWrappers');
-const { students } = require('./new_students.json');
+const data = require('../students.json');
+const students = data.students.map(item => item.replace('https://github.com/', ''));
 
 const gitignore = '.idea\nnode_modules\n*.bundle.js\n*.log\n';
 const editorconfig = 'root = true\n\n[*]\nend_of_line = lf\ninsert_final_newline = true\n[*.js]\n\ncharset = utf-8\nindent_style = space\nindent_size = 4\n';
@@ -16,16 +17,16 @@ login().then((data) => {
     logger.info(` Hello ${data.username}!`);
     logger.info('-----------------------------');
 
-
-    createRepo(students.pop());
+    return createRepo(students.pop());
+    
 });
 
-function createRepo(user) {
+async function createRepo(user) {
     if (!user) {
         return;
     }
 
-    const repoName = `${user}-front-end-course`;
+    const repoName = `${user}-2019Q1`;
     const options = {
         auto_init: true,
         gitignore_template: false,
@@ -36,26 +37,17 @@ function createRepo(user) {
         }
     };
 
-    createOrgRepo(organization, repoName, options)
-        .then(() => {
-            return addRepoForTeam(organization, 'Mentors', repoName, 'push');
-        })
-        .then(() => {
-            return addRepoForTeam(organization, 'Trainers', repoName, 'push');
-        })
-        .then(() => {
-            return addFile(repoName, '.gitignore', 'feature: base .gitiginore', gitignore, organization);
-        })
-        .then(() => {
-            return addFile(repoName, '.editorconfig', 'feature: base .editorconfig', editorconfig, organization)
-        })
-        .then(() => {
-            logger.warn(user, ' DONE!');
-            createRepo(students.pop());
-        })
-        .catch((e) => {
-            logger.error(user, JSON.stringify(e));
-            createRepo(students.pop());
-        });
+    try {
+        await createOrgRepo(organization, repoName, options);
+        await addRepoForTeam(organization, 'Mentors', repoName, 'push');
+        await addRepoForTeam(organization, 'Trainers', repoName, 'push');
+        await addFile(repoName, '.gitignore', 'feat: base .gitiginore', gitignore, organization);
+        await addFile(repoName, '.editorconfig', 'feat: base .editorconfig', editorconfig, organization);
 
+        logger.warn(user, ' added');
+    } catch (e) {
+        logger.error(user, JSON.stringify(e));
+    }
+
+    return createRepo(students.pop());
 }
